@@ -29,22 +29,40 @@ for /f "tokens=2" %%v in ('python --version 2^>^&1') do echo   OK: Python %%v
 :: -- 2. uv -------------------------------------------------------------------
 echo.
 echo [2/7] Verificando uv...
+set UV=uv
 where uv >nul 2>&1
-if errorlevel 1 (
-    echo   uv nao encontrado. Instalando via pip...
-    pip install uv --quiet
-    if errorlevel 1 ( echo   ERRO: falha ao instalar uv. & pause & exit /b 1 )
-    echo   OK: uv instalado.
-) else (
+if not errorlevel 1 (
     for /f "tokens=*" %%v in ('uv --version 2^>^&1') do echo   OK: %%v
+    goto UV_PRONTO
 )
+
+:: uv nao esta no PATH — tentar via python -m uv primeiro
+python -m uv --version >nul 2>&1
+if not errorlevel 1 (
+    set UV=python -m uv
+    for /f "tokens=*" %%v in ('python -m uv --version 2^>^&1') do echo   OK (via python -m uv^): %%v
+    goto UV_PRONTO
+)
+
+:: nenhum funciona: instalar
+echo   uv nao encontrado. Instalando via pip...
+pip install uv --quiet
+if errorlevel 1 ( echo   ERRO: falha ao instalar uv. & pause & exit /b 1 )
+
+:: Apos instalar, PATH ainda nao atualizado — usar python -m uv
+python -m uv --version >nul 2>&1
+if errorlevel 1 ( echo   ERRO: uv instalado mas nao responde. Reinicie o terminal. & pause & exit /b 1 )
+set UV=python -m uv
+echo   OK: uv instalado e disponivel via python -m uv
+
+:UV_PRONTO
 
 :: -- 3. Dependencias ----------------------------------------------------------
 echo.
-echo [3/7] Sincronizando dependencias (uv sync)...
-uv sync
+echo [3/7] Sincronizando dependencias...
+%UV% sync
 if errorlevel 1 (
-    echo   ERRO: uv sync falhou. Verifique pyproject.toml e conexao de rede.
+    echo   ERRO: sync falhou. Verifique pyproject.toml e conexao de rede.
     pause & exit /b 1
 )
 echo   OK: Ambiente virtual atualizado.
@@ -102,7 +120,7 @@ echo   OK: SearXNG online em http://localhost:8080
 :: -- 7. Doctor ---------------------------------------------------------------
 echo.
 echo [7/7] Executando verificacao de saude...
-uv run abstrator doctor 2>&1
+%UV% run abstrator doctor 2>&1
 if errorlevel 1 (
     echo   AVISO: Alguns checks falharam (ver acima).
 ) else (
@@ -114,9 +132,9 @@ echo ==========================================
 echo   AMBIENTE PRONTO
 echo ==========================================
 echo.
-echo   uv run abstrator run "meu topico"    - pesquisar
-echo   uv run abstrator mcp                 - servidor MCP
-echo   uv run abstrator doctor              - checar saude
+echo   %UV% run abstrator run "meu topico"   - pesquisar
+echo   %UV% run abstrator mcp                - servidor MCP
+echo   %UV% run abstrator doctor             - checar saude
 echo.
 pause
 endlocal
