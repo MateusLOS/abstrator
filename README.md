@@ -1,31 +1,40 @@
 # Abstrator
 
-> Recursive abstraction research — decomposes any idea into sub-concepts, researches each through named lenses, and synthesizes structured JSON with cited sources.
+> Recursive abstraction research — transforms any complex topic into a professional-grade guide by decomposing it, researching each part through specialized lenses, and synthesizing the result into clean, conversation-ready markdown.
 
 ## What it is
 
 Abstrator is an **MCP server + CLI** that takes a question or topic and runs a recursive chain:
 
 1. **Decomposition** — breaks the concept into simpler sub-concepts (via LLM)
-2. **Lens-based research** — each sub-concept is researched through fixed, named perspectives (`meaning`, `theory`, `practice`, `existing_tools`…) using local SearXNG + page fetching
+2. **Lens-based research** — each sub-concept is researched through fixed, named perspectives (`meaning`, `theory`, `practice`, `best_practices`, `expert_views`, `advanced_methods`, `existing_tools`) using local SearXNG + page fetching
 3. **Bottom-up integration** — synthesizes children's findings into the parent, preserving conflicts and gaps
-4. **Root synthesis** — produces a final summary with cited sources, open questions, and a learning path
+4. **Root synthesis** — produces the final result as a professional guide with best practices, expert views, methodologies and tools
 
-The output is a `Run` with a node tree, indexed sources, learning path and recommendations — all in typed JSON.
+The `ask` tool returns clean markdown, ready to use directly in any AI conversation.
 
 ---
 
-## Why it's different
+## How to use in Claude Code
 
-**Named, fixed lenses.** Instead of generic search, each sub-concept is researched across explicit dimensions. This produces rich, comparable context across runs — not a list of links.
+### Slash command (primary)
 
-**Hard budget per run.** Configurable limits on queries, pages, LLM calls, tokens, seconds and USD — tracked in real time. When any limit is hit, the run stops and returns whatever was processed, with no surprise costs.
+In any Claude Code conversation with the project open:
 
-**Local SearXNG.** Web search with no paid API dependency and no tracking. You control the index, cache and enabled sources.
+```
+/abstrator website design
+/abstrator how to negotiate a salary
+/abstrator event sourcing for backend
+/abstrator machine learning, beginner focus
+```
 
-**MCP-native from the start.** The MCP server is not a wrapper added later — it's the primary interface. All tools (`abstract`, `assess_complexity`, `expand_node`, `research_concept`) are designed for use in AI conversations, returning structured JSON with real-time progress support.
-
-**Multiple LLM providers.** Switch provider without changing code — Anthropic, Ollama, OpenRouter, OpenCode, Gemini CLI — with automatic resolution based on configured keys.
+The command researches the topic and delivers a professional-grade guide with:
+- Clear synthesis of the topic
+- Best practices (what practitioners follow and why)
+- What the experts say (attributed)
+- Methodologies and architectures (ranked by fit)
+- Available tools and resources
+- Concrete next steps
 
 ---
 
@@ -38,107 +47,8 @@ preparar.bat
 REM 2. Fill in credentials
 notepad .env
 
-REM 3. Use
-uv run abstrator run "microservices architecture"
-uv run abstrator run "machine learning" --mode deep
-uv run abstrator mcp        REM start MCP server (stdio)
-```
-
----
-
-## Running the MCP server
-
-### Option 1 — Claude Code (recommended)
-
-```bash
-claude mcp add abstrator -- uv --directory "C:\Projetos\abstrator" run abstrator mcp
-```
-
-Then use it in any conversation:
-```
-assess_complexity("event sourcing")
-abstract("event sourcing", mode="standard")
-```
-
-### Option 2 — Claude Desktop
-
-Add to `%APPDATA%\Claude\claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "abstrator": {
-      "command": "uv",
-      "args": ["--directory", "C:\\Projetos\\abstrator", "run", "abstrator", "mcp"]
-    }
-  }
-}
-```
-
-Restart Claude Desktop — the tools appear automatically.
-
-### Option 3 — Gemini CLI
-
-Add to `%USERPROFILE%\.gemini\settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "abstrator": {
-      "command": "uv",
-      "args": ["--directory", "C:\\Projetos\\abstrator", "run", "abstrator", "mcp"]
-    }
-  }
-}
-```
-
-### Option 4 — OpenCode
-
-Create `opencode.json` in your project folder:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "abstrator": {
-      "type": "local",
-      "command": ["uv", "--directory", "C:\\Projetos\\abstrator", "run", "abstrator", "mcp"],
-      "enabled": true
-    }
-  }
-}
-```
-
-### Option 5 — Launcher BAT
-
-Run `iniciar-abstrator-mcp.bat` — it starts Docker/SearXNG and launches the MCP server in a separate window. Keep that window open while using.
-
-### Smoke test (verify it works)
-
-```bash
-uv run python scripts/smoke_mcp.py
-```
-
----
-
-## MCP tools
-
-| Tool | Description |
-|---|---|
-| `assess_complexity` | Checks if a concept needs decomposition (cheap — use first) |
-| `abstract` | Runs the full recursive chain, returns the Run JSON |
-| `research_concept` | Researches a single concept without recursion |
-| `expand_node` | Deepens a node that stopped early (e.g. MAX_DEPTH) |
-| `get_run` | Retrieves a saved Run |
-| `list_runs` | Lists recent Runs |
-| `cancel_run` | Kill switch for a running abstract() call |
-
-### Recommended conversation flow
-
-```
-1. assess_complexity("my topic")           → decide whether to run abstract() or research_concept()
-2. abstract("my topic", mode="standard")   → full Run with tree and sources
-3. expand_node(run_id, node_id)            → deepen a node that stopped at max_depth
+REM 3. Register the MCP in Claude Code (once)
+claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
 ```
 
 ---
@@ -183,8 +93,8 @@ OLLAMA_MODEL=qwen2.5:14b
 # OpenRouter (hundreds of models, one key)
 OPENROUTER_API_KEY=sk-or-...
 
-# SearXNG
-SEARXNG_URL=http://localhost:8080
+# SearXNG (port 8888 — port 8080 may be taken by Steam or other apps)
+SEARXNG_URL=http://localhost:8888
 ```
 
 ### Auto-resolution order (`auto`)
@@ -193,6 +103,90 @@ SEARXNG_URL=http://localhost:8080
 2. `anthropic` — if `ANTHROPIC_API_KEY` is set
 3. `openrouter` — if `OPENROUTER_API_KEY` is set
 4. `gemini_cli` — fallback (no key needed, uses `gemini` binary)
+
+---
+
+## MCP tools
+
+| Tool | Output | When to use |
+|---|---|---|
+| `ask` | Professional markdown | **Primary.** Researches and returns a guide ready for conversation |
+| `assess_complexity` | JSON | Checks if decomposition is worth it (cheap — use before abstract) |
+| `abstract` | Full Run JSON | When you need the structured tree, indexed sources, and learning path |
+| `research_concept` | Node JSON | Researches a single concept without recursion |
+| `expand_node` | Updated Run JSON | Deepens a node that stopped early |
+| `get_run` | JSON | Retrieves a saved Run |
+| `list_runs` | List | Lists recent Runs |
+| `cancel_run` | Status | Kill switch for a running abstract() call |
+
+### Register in Claude Code
+
+```bash
+claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
+```
+
+> **Note:** use the full path to the `.venv` executable — `uv` may not be in Claude Code's PATH.
+
+### Claude Desktop
+
+Add to `%APPDATA%\Claude\claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "abstrator": {
+      "command": "C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+### Gemini CLI
+
+Add to `%USERPROFILE%\.gemini\settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "abstrator": {
+      "command": "C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+### OpenCode
+
+Create `opencode.json` in your project folder:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "abstrator": {
+      "type": "local",
+      "command": ["C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe", "mcp"],
+      "enabled": true
+    }
+  }
+}
+```
+
+### Recommended conversation flow
+
+**Common use — slash command:**
+```
+/abstrator event sourcing
+```
+
+**Advanced use — direct tools:**
+```
+1. assess_complexity("my topic")           → decide whether to run abstract() or research_concept()
+2. abstract("my topic", mode="standard")   → full Run JSON with tree and sources
+3. expand_node(run_id, node_id)            → deepen a node that stopped at max_depth
+```
 
 ---
 
@@ -226,7 +220,7 @@ SEARXNG_URL=http://localhost:8080
 | Provider | Key needed | Notes |
 |---|---|---|
 | `opencode_zen` | `OPENCODE_API_KEY` | Default. OpenAI-compatible gateway |
-| `anthropic` | `ANTHROPIC_API_KEY` + `uv add anthropic` | Native prompt caching — reduces cost up to 90% on long runs |
+| `anthropic` | `ANTHROPIC_API_KEY` + `uv add anthropic` | Native prompt caching — up to 90% cost reduction on long runs |
 | `ollama` | none | Local models, zero token cost |
 | `openrouter` | `OPENROUTER_API_KEY` | Hundreds of models, one key |
 | `gemini_cli` | none | Delegates to `gemini` binary |
@@ -247,7 +241,7 @@ Hard limits — when any is reached the run stops and returns partial results:
 | `ABSTRATOR_BUDGET_MAX_SECONDS` | 900 | total time |
 | `ABSTRATOR_BUDGET_MAX_USD` | 2.0 | estimated cost in USD |
 
-Modes scale budget proportionally: `quick` = 0.35×, `standard` = 1×, `deep` = 2.5×.
+Modes scale budget: `quick` = 0.35×, `standard` = 1×, `deep` = 2.5×.
 
 ---
 
@@ -287,7 +281,7 @@ CLI (typer)  /  MCP (MCPServer)
                 ├── assess_complexity  (LLM)
                 ├── decompose          (LLM → SubConcept[])
                 ├── ResearchEngine
-                │     ├── SearxngClient  (local web search)
+                │     ├── SearxngClient  (local web search — port 8888)
                 │     ├── Fetcher        (download + trafilatura)
                 │     └── LLMRunner      (per-lens analysis)
                 ├── integrate          (LLM bottom-up)
