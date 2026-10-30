@@ -1,4 +1,5 @@
 @echo off
+if not "%~1"=="--run" ( cmd /k "%~f0" --run & exit /b )
 setlocal EnableDelayedExpansion
 chcp 65001 >nul 2>&1
 title Abstrator — Preparação do Ambiente

@@ -1,125 +1,103 @@
 @echo off
+if not "%~1"=="--run" ( cmd /k "%~f0" --run & exit /b )
 setlocal EnableExtensions EnableDelayedExpansion
 
-title Abstrator MCP - Inicializador Completo
+title Abstrator MCP - Iniciando
 
 echo ========================================
-echo   ABSTRATOR MCP - INICIANDO TUDO
+echo   ABSTRATOR MCP - INICIANDO
 echo ========================================
 echo.
-echo Pasta: %CD%
-echo.
+
+cd /d "%~dp0"
 
 if not exist "pyproject.toml" (
-    echo [FALHA] Rode este arquivo dentro de C:\Projetos\abstrator
+    echo [FALHA] Nao encontrei pyproject.toml nesta pasta.
+    echo         Execute este arquivo de dentro de C:\Projetos\abstrator
     pause
     exit /b 1
 )
-cd /d "%~dp0"
-echo [OK] Na pasta correta
-echo.
-
-set GEMINI_CLI_TRUST_WORKSPACE=true
-set ABSTRATOR_LLM_PROVIDER=gemini_cli
-set ABSTRATOR_GEMINI_CLI_MODEL=gemini-3.5-flash-lite
-
-echo [OK] Variaveis de ambiente definidas
+echo [OK] Pasta correta: %CD%
 echo.
 
 if not exist ".venv\Scripts\abstrator.exe" (
-    echo [FALHA] .venv\Scripts\abstrator.exe nao encontrado
+    echo [FALHA] Ambiente virtual nao encontrado.
+    echo         Execute preparar.bat primeiro.
     pause
     exit /b 1
 )
-echo [OK] .venv\Scripts\abstrator.exe encontrado
+echo [OK] .venv encontrado
 echo.
 
+REM -- Docker -----------------------------------------------------------------
 set DOCKER_BIN=C:\Program Files\Docker\Docker\resources\bin\docker.exe
-echo [CHECK] Verificando Docker Desktop...
-"%DOCKER_BIN%" version --format "{{.Server.Version}}" >nul 2>&1
+if not exist "%DOCKER_BIN%" set DOCKER_BIN=docker
+
+echo [CHECK] Verificando Docker...
+"%DOCKER_BIN%" version >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] Iniciando Docker Desktop...
+    echo [INFO] Docker nao responde. Tentando iniciar Docker Desktop...
     if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
         start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-        echo [INFO] Aguardando motor do Docker...
-        timeout /t 40 /nobreak >nul
-    )
-    set ATT=0
-    :WAITD
-    "%DOCKER_BIN%" version --format "{{.Server.Version}}" >nul 2>&1
-    if not errorlevel 1 goto DOCKEROK2
-    set /a ATT+=1
-    if %ATT% geq 25 (
-        echo [FALHA] Nao consegui conectar ao Docker
-        echo         Abra o Docker Desktop e espere "Engine running" e rode este .bat novamente
+        echo [INFO] Aguardando Docker iniciar (ate 2 minutos)...
+        set /a DATT=0
+        :WAITDOCKER
+        timeout /t 5 /nobreak >nul
+        "%DOCKER_BIN%" version >nul 2>&1
+        if not errorlevel 1 goto DOCKER_OK
+        set /a DATT+=1
+        if !DATT! lss 24 goto WAITDOCKER
+        echo [FALHA] Docker nao respondeu. Abra o Docker Desktop manualmente e tente novamente.
         pause
         exit /b 1
+    ) else (
+        echo [AVISO] Docker Desktop nao encontrado. Continuando sem SearXNG...
+        goto STARTMCP
     )
-    timeout /t 5 /nobreak >nul
-    goto WAITD
 )
-:DOCKEROK2
+:DOCKER_OK
 echo [OK] Docker pronto
 echo.
 
+REM -- SearXNG ----------------------------------------------------------------
 echo [CHECK] Subindo SearXNG...
 "%DOCKER_BIN%" compose up -d searxng >nul 2>&1
-timeout /t 12 /nobreak >nul
-echo [OK] Comando para subir SearXNG enviado
-echo.
 
-echo [CHECK] Aguardando SearXNG responder...
-set SATT=0
-:WAITSEARX
-powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "try{ $r=Invoke-WebRequest -Uri 'http://localhost:8080/search?q=test&format=json' -UseBasicParsing -Headers @{'User-Agent'='Abstrator/0.1'} -TimeoutSec 7; if($r.StatusCode -eq 200 -and $r.Content -match 'results'){exit 0}}catch{}; exit 1" >nul 2>&1
+echo [CHECK] Aguardando SearXNG ficar pronto...
+set /a SATT=0
+:WAITSEARXNG
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ^
+  "try{$r=Invoke-WebRequest -Uri 'http://localhost:8080/search?q=test&format=json' -UseBasicParsing -TimeoutSec 5; if($r.StatusCode -eq 200){exit 0}}catch{}; exit 1" >nul 2>&1
 if not errorlevel 1 (
-    echo [OK] SearXNG online
+    echo [OK] SearXNG online em http://localhost:8080
     goto STARTMCP
 )
 set /a SATT+=1
-if %SATT% geq 18 (
-    echo [AVISO] SearXNG ainda inicializando, mas vou seguir assim mesmo
-    goto STARTMCP
+if !SATT! lss 18 (
+    timeout /t 5 /nobreak >nul
+    goto WAITSEARXNG
 )
-timeout /t 5 /nobreak >nul
-goto WAITSEARX
+echo [AVISO] SearXNG nao respondeu ainda, mas continuando...
 
+REM -- MCP --------------------------------------------------------------------
 :STARTMCP
 echo.
-echo [INFO] Iniciando servidor MCP em nova janela...
-start "ABSTRATOR-MCP" cmd /k "cd /d "%CD%" && set GEMINI_CLI_TRUST_WORKSPACE=true && set ABSTRATOR_LLM_PROVIDER=gemini_cli && set ABSTRATOR_GEMINI_CLI_MODEL=gemini-3.5-flash-lite && ".\.venv\Scripts\abstrator.exe" mcp"
-timeout /t 4 /nobreak >nul
-echo [OK] Servidor MCP rodando na janela ABSTRATOR-MCP
-echo.
+echo [INFO] Iniciando servidor MCP...
+set MCP_CMD=.\.venv\Scripts\abstrator.exe mcp
+start "ABSTRATOR-MCP" cmd /k %MCP_CMD%
+timeout /t 3 /nobreak >nul
 
-echo ========================================
-echo   CONFIGURAÇÃO PARA O OPENCODE
-echo ========================================
-echo.
-echo Crie/edite na raiz do projeto que voce vai abrir com o OpenCode:
-echo   opencode.json
-echo.
-echo Cole exatamente isto:
-echo.
-echo {
-echo   "$schema": "https://opencode.ai/config.json",
-echo   "mcp": {
-echo     "abstrator": {
-echo       "type": "local",
-echo       "command": ["%CD:\=\\%\\.venv\\Scripts\\abstrator.exe", "mcp"],
-echo       "enabled": true,
-echo       "environment": {
-echo         "GEMINI_CLI_TRUST_WORKSPACE": "true",
-echo         "ABSTRATOR_LLM_PROVIDER": "gemini_cli",
-echo         "ABSTRATOR_GEMINI_CLI_MODEL": "gemini-3.5-flash-lite"
-echo       }
-echo     }
-echo   }
-echo }
+echo [OK] Servidor MCP iniciando na janela "ABSTRATOR-MCP"
 echo.
 echo ========================================
+echo   PRONTO
+echo ========================================
 echo.
-echo PRONTO. Abra o OpenCode na pasta com esse opencode.json e converse normalmente.
+echo O provider e modelo serao lidos do .env (ou variaveis de ambiente).
+echo.
+echo Para registrar no Claude Code (se ainda nao fez):
+echo   claude mcp add abstrator -- uv --directory "%CD%" run abstrator mcp
+echo.
 echo NAO FECHE a janela ABSTRATOR-MCP enquanto estiver usando.
 echo.
 pause

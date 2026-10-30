@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
 
 from .audit import AuditLog
 from .config import IdFactory, get_settings
@@ -30,7 +30,7 @@ log = logging.getLogger("abstrator.mcp")
 # runs em andamento neste processo (para o kill switch por MCP)
 ACTIVE: dict[str, Orchestrator] = {}
 
-mcp = FastMCP(
+mcp = MCPServer(
     "abstrator",
     instructions=(
         "Pesquisa por abstracao recursiva. Fluxo recomendado: assess_complexity "
