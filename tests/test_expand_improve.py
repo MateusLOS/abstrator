@@ -83,7 +83,7 @@ async def test_expand_reuses_source_ids_for_same_url(settings, monkeypatch):
 
 @respx.mock
 async def test_improve_writes_proposals_without_touching_code(settings, monkeypatch):
-    monkeypatch.setattr("abstrator.engine.improve._provider", lambda s: FakeLLM())
+    monkeypatch.setattr("abstrator.engine.improve.build_provider", lambda s: FakeLLM())
     respx.get("http://searxng.test/search").mock(
         return_value=httpx.Response(200, json=SEARCH_PAYLOAD)
     )
