@@ -1,0 +1,665 @@
+{
+  "$defs": {
+    "AdvancedMethod": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "when_to_use": {
+          "title": "When To Use",
+          "type": "string"
+        },
+        "fit_score": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Fit Score",
+          "type": "number"
+        },
+        "source_ids": {
+          "items": {
+            "pattern": "^s\\d+$",
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "when_to_use",
+        "fit_score"
+      ],
+      "title": "AdvancedMethod",
+      "type": "object"
+    },
+    "Analysis": {
+      "additionalProperties": false,
+      "properties": {
+        "meaning": {
+          "default": "",
+          "title": "Meaning",
+          "type": "string"
+        },
+        "analogy": {
+          "default": "",
+          "title": "Analogy",
+          "type": "string"
+        },
+        "theory": {
+          "default": "",
+          "title": "Theory",
+          "type": "string"
+        },
+        "practice": {
+          "default": "",
+          "title": "Practice",
+          "type": "string"
+        },
+        "best_practices": {
+          "items": {
+            "$ref": "#/$defs/CreditedClaim"
+          },
+          "title": "Best Practices",
+          "type": "array"
+        },
+        "expert_views": {
+          "items": {
+            "$ref": "#/$defs/ExpertView"
+          },
+          "title": "Expert Views",
+          "type": "array"
+        },
+        "advanced_methods": {
+          "items": {
+            "$ref": "#/$defs/AdvancedMethod"
+          },
+          "title": "Advanced Methods",
+          "type": "array"
+        },
+        "existing_tools": {
+          "items": {
+            "$ref": "#/$defs/ExistingTool"
+          },
+          "title": "Existing Tools",
+          "type": "array"
+        },
+        "fit_to_goal": {
+          "default": "",
+          "title": "Fit To Goal",
+          "type": "string"
+        },
+        "consensus": {
+          "default": "",
+          "title": "Consensus",
+          "type": "string"
+        },
+        "conflicts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conflicts",
+          "type": "array"
+        },
+        "open_questions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Open Questions",
+          "type": "array"
+        }
+      },
+      "title": "Analysis",
+      "type": "object"
+    },
+    "Budget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_queries": {
+          "default": 0,
+          "title": "Max Queries",
+          "type": "integer"
+        },
+        "max_pages": {
+          "default": 0,
+          "title": "Max Pages",
+          "type": "integer"
+        },
+        "max_llm_calls": {
+          "default": 0,
+          "title": "Max Llm Calls",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 0,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "max_seconds": {
+          "default": 0.0,
+          "title": "Max Seconds",
+          "type": "number"
+        },
+        "max_usd": {
+          "default": 0.0,
+          "title": "Max Usd",
+          "type": "number"
+        },
+        "queries": {
+          "default": 0,
+          "title": "Queries",
+          "type": "integer"
+        },
+        "pages": {
+          "default": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "llm_calls": {
+          "default": 0,
+          "title": "Llm Calls",
+          "type": "integer"
+        },
+        "tokens": {
+          "default": 0,
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "seconds": {
+          "default": 0.0,
+          "title": "Seconds",
+          "type": "number"
+        },
+        "usd": {
+          "default": 0.0,
+          "title": "Usd",
+          "type": "number"
+        },
+        "stopped_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stopped By"
+        }
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "Complexity": {
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Score",
+          "type": "number"
+        },
+        "verdict": {
+          "$ref": "#/$defs/ComplexityVerdict",
+          "default": "simple"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "score"
+      ],
+      "title": "Complexity",
+      "type": "object"
+    },
+    "ComplexityVerdict": {
+      "enum": [
+        "complex",
+        "simple"
+      ],
+      "title": "ComplexityVerdict",
+      "type": "string"
+    },
+    "CreditedClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "pattern": "^s\\d+$",
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "CreditedClaim",
+      "type": "object"
+    },
+    "ExistingTool": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "free": {
+          "default": false,
+          "title": "Free",
+          "type": "boolean"
+        },
+        "url": {
+          "default": "",
+          "title": "Url",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "pattern": "^s\\d+$",
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ExistingTool",
+      "type": "object"
+    },
+    "ExpertView": {
+      "additionalProperties": false,
+      "properties": {
+        "who": {
+          "title": "Who",
+          "type": "string"
+        },
+        "claim": {
+          "title": "Claim",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "pattern": "^s\\d+$",
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "who",
+        "claim"
+      ],
+      "title": "ExpertView",
+      "type": "object"
+    },
+    "Intent": {
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "default": "",
+          "title": "Goal",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/IntentType",
+          "default": "mixed"
+        },
+        "constraints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Constraints",
+          "type": "array"
+        }
+      },
+      "title": "Intent",
+      "type": "object"
+    },
+    "IntentType": {
+      "enum": [
+        "practical",
+        "theoretical",
+        "mixed"
+      ],
+      "title": "IntentType",
+      "type": "string"
+    },
+    "Node": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "default": "",
+          "pattern": "^n\\d+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "concept": {
+          "title": "Concept",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "pattern": "^n\\d+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "children": {
+          "items": {
+            "pattern": "^n\\d+$",
+            "type": "string"
+          },
+          "title": "Children",
+          "type": "array"
+        },
+        "depth": {
+          "minimum": 0,
+          "title": "Depth",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/NodeStatus",
+          "default": "pending"
+        },
+        "complexity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Complexity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "analysis": {
+          "$ref": "#/$defs/Analysis"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "queries": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Queries",
+          "type": "array"
+        },
+        "memoized_from": {
+          "anyOf": [
+            {
+              "pattern": "^n\\d+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memoized From"
+        },
+        "stop_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StopReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "concept",
+        "depth"
+      ],
+      "title": "Node",
+      "type": "object"
+    },
+    "NodeStatus": {
+      "enum": [
+        "pending",
+        "leaf",
+        "synthesized",
+        "pruned",
+        "budget_stopped",
+        "failed"
+      ],
+      "title": "NodeStatus",
+      "type": "string"
+    },
+    "Recommendation": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "node_ids": {
+          "items": {
+            "pattern": "^n\\d+$",
+            "type": "string"
+          },
+          "title": "Node Ids",
+          "type": "array"
+        },
+        "source_ids": {
+          "items": {
+            "pattern": "^s\\d+$",
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "rationale": {
+          "default": "",
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "Recommendation",
+      "type": "object"
+    },
+    "RunMode": {
+      "enum": [
+        "quick",
+        "standard",
+        "deep"
+      ],
+      "title": "RunMode",
+      "type": "string"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/SourceType",
+          "default": "other"
+        },
+        "credibility": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Credibility",
+          "type": "number"
+        },
+        "retrieved_at": {
+          "format": "date-time",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "snippet": {
+          "default": "",
+          "title": "Snippet",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "SourceType": {
+      "enum": [
+        "academic",
+        "official_docs",
+        "expert",
+        "news",
+        "forum",
+        "vendor",
+        "other"
+      ],
+      "title": "SourceType",
+      "type": "string"
+    },
+    "StopReason": {
+      "enum": [
+        "max_depth",
+        "max_nodes",
+        "max_fanout",
+        "budget",
+        "cancelled",
+        "stagnation",
+        "memoized",
+        "duplicate"
+      ],
+      "title": "StopReason",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "query": {
+      "title": "Query",
+      "type": "string"
+    },
+    "mode": {
+      "$ref": "#/$defs/RunMode",
+      "default": "standard"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "intent": {
+      "$ref": "#/$defs/Intent"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "learning_path": {
+      "items": {
+        "pattern": "^n\\d+$",
+        "type": "string"
+      },
+      "title": "Learning Path",
+      "type": "array"
+    },
+    "recommendations": {
+      "items": {
+        "$ref": "#/$defs/Recommendation"
+      },
+      "title": "Recommendations",
+      "type": "array"
+    },
+    "root_id": {
+      "pattern": "^n\\d+$",
+      "title": "Root Id",
+      "type": "string"
+    },
+    "nodes": {
+      "patternProperties": {
+        "^n\\d+$": {
+          "$ref": "#/$defs/Node"
+        }
+      },
+      "title": "Nodes",
+      "type": "object"
+    },
+    "sources": {
+      "patternProperties": {
+        "^s\\d+$": {
+          "$ref": "#/$defs/Source"
+        }
+      },
+      "title": "Sources",
+      "type": "object"
+    },
+    "budget": {
+      "$ref": "#/$defs/Budget"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "run_id",
+    "query",
+    "root_id"
+  ],
+  "title": "Run",
+  "type": "object"
+}

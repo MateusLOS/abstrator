@@ -1,0 +1,21 @@
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: abstrator-searxng
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+      - searxng-cache:/var/cache/searxng
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080/
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+
+volumes:
+  searxng-cache:
