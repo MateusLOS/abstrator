@@ -41,45 +41,103 @@ mcp = MCPServer(
 
 
 def _format_response(run: Run) -> str:
-    """Formata a Run como markdown limpo para uso direto em conversa."""
+    """Guia de nível profissional montado a partir dos dados estruturados da Run."""
     lines: list[str] = []
 
+    # Síntese principal (intro profissional gerado pelo LLM de síntese)
     if run.summary:
         lines.append(run.summary)
         lines.append("")
 
-    # Recomendações do nó raiz ou da run
+    # Agrega dados estruturados de todos os nós (ordem: simples → complexo)
+    best_practices: list = []
+    expert_views: list = []
+    advanced_methods: list = []
+    tools: list = []
+
+    seen_bp: set[str] = set()
+    seen_ev: set[str] = set()
+    seen_am: set[str] = set()
+    seen_tool: set[str] = set()
+
+    for node in run.ordered_nodes():
+        a = node.analysis
+        for bp in a.best_practices:
+            key = bp.text[:80]
+            if key not in seen_bp:
+                seen_bp.add(key)
+                best_practices.append(bp)
+        for ev in a.expert_views:
+            key = f"{ev.who}:{ev.claim[:60]}"
+            if key not in seen_ev:
+                seen_ev.add(key)
+                expert_views.append(ev)
+        for am in a.advanced_methods:
+            if am.name not in seen_am:
+                seen_am.add(am.name)
+                advanced_methods.append(am)
+        for t in a.existing_tools:
+            if t.name not in seen_tool:
+                seen_tool.add(t.name)
+                tools.append(t)
+
+    if best_practices:
+        lines.append("## Boas práticas")
+        lines.append("")
+        for bp in best_practices[:12]:
+            lines.append(f"- {bp.text}")
+        lines.append("")
+
+    if expert_views:
+        lines.append("## O que os especialistas dizem")
+        lines.append("")
+        for ev in expert_views[:8]:
+            lines.append(f"- **{ev.who}**: {ev.claim}")
+        lines.append("")
+
+    if advanced_methods:
+        ordered = sorted(advanced_methods, key=lambda m: -m.fit_score)
+        lines.append("## Metodologias e arquiteturas")
+        lines.append("")
+        for m in ordered[:6]:
+            lines.append(f"- **{m.name}** — {m.when_to_use}")
+        lines.append("")
+
+    if tools:
+        lines.append("## Ferramentas e recursos")
+        lines.append("")
+        for t in tools[:10]:
+            entry = f"- **{t.name}**"
+            if t.note:
+                entry += f" — {t.note}"
+            if t.url:
+                entry += f" ([link]({t.url}))"
+            if t.free:
+                entry += " ✓ gratuito"
+            lines.append(entry)
+        lines.append("")
+
     if run.recommendations:
-        lines.append("## Recomendações")
+        lines.append("## Próximos passos recomendados")
         lines.append("")
-        for rec in run.recommendations:
-            lines.append(f"- {rec.text}")
+        for i, rec in enumerate(run.recommendations, 1):
+            lines.append(f"{i}. {rec.text}")
             if rec.rationale:
-                lines.append(f"  _{rec.rationale}_")
+                lines.append(f"   _{rec.rationale}_")
         lines.append("")
 
-    # Questões em aberto do nó raiz
-    root = run.nodes.get(run.root_id)
-    if root and root.analysis.open_questions:
-        lines.append("## Questões em aberto")
-        lines.append("")
-        for q in root.analysis.open_questions:
-            lines.append(f"- {q}")
-        lines.append("")
-
-    # Rodapé leve: custo e fontes únicas
-    n_sources = len(run.sources)
-    footer_parts = []
-    if n_sources:
-        footer_parts.append(f"{n_sources} fonte{'s' if n_sources != 1 else ''} consultada{'s' if n_sources != 1 else ''}")
+    # Rodapé mínimo
+    parts = []
+    if run.sources:
+        parts.append(f"{len(run.sources)} fontes")
     if run.budget.seconds:
-        footer_parts.append(f"{run.budget.seconds:.0f}s")
+        parts.append(f"{run.budget.seconds:.0f}s")
     if run.budget.usd:
-        footer_parts.append(f"${run.budget.usd:.4f}")
+        parts.append(f"${run.budget.usd:.4f}")
     if run.budget.stopped_by:
-        footer_parts.append(f"parou por {run.budget.stopped_by}")
-    if footer_parts:
-        lines.append(f"---\n*{' · '.join(footer_parts)}*")
+        parts.append(f"parou: {run.budget.stopped_by}")
+    if parts:
+        lines.append(f"---\n*{' · '.join(parts)}*")
 
     return "\n".join(lines).strip()
 
@@ -88,14 +146,15 @@ def _format_response(run: Run) -> str:
 async def ask(
     ctx: Context,
     query: str,
-    mode: str = "quick",
+    mode: str = "standard",
     goal: str = "",
 ) -> str:
-    """Pesquisa um tema e devolve uma resposta direta em markdown, pronta para usar na conversa.
+    """Pesquisa um tema e devolve um guia profissional em markdown, pronto para usar na conversa.
 
-    Use para perguntas como 'como desenhar um rosto', 'o que é event sourcing', etc.
-    mode: quick (padrao, rapido) | standard | deep.
-    goal: contexto adicional opcional, ex.: 'para iniciante' ou 'foco em performance'.
+    Use para perguntas como 'design de site', 'event sourcing', 'como negociar', etc.
+    Retorna: sintese, boas praticas, o que especialistas dizem, metodologias, ferramentas e proximos passos.
+    mode: quick (rapido, menos profundidade) | standard (padrao) | deep (exaustivo).
+    goal: contexto opcional, ex.: 'para iniciante', 'foco em performance', 'contexto B2B'.
     """
     settings = get_settings()
     audit = AuditLog(Path(settings.runs_dir), None, enabled=False)
