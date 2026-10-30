@@ -62,7 +62,7 @@ docker compose up -d searxng >nul 2>&1
 echo [CHECK] Aguardando SearXNG ficar pronto...
 set /a STRY=0
 :WAIT_SEARXNG
-powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "try{if((Invoke-WebRequest 'http://localhost:8080/search?q=test&format=json' -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200){exit 0}}catch{};exit 1" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "try{if((Invoke-WebRequest 'http://127.0.0.1:8888/' -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200){exit 0}}catch{};exit 1" >nul 2>&1
 if not errorlevel 1 ( echo [OK] SearXNG online & goto START_MCP )
 set /a STRY+=1
 if !STRY! lss 18 ( timeout /t 5 /nobreak >nul & goto WAIT_SEARXNG )

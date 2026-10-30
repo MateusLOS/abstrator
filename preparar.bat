@@ -111,9 +111,12 @@ if !STRY! gtr 15 (
     echo   AVISO: SearXNG nao respondeu em 30s. Continuando mesmo assim.
     goto SEM_SEARXNG
 )
-powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "try{if((Invoke-WebRequest 'http://localhost:8080/healthz' -UseBasicParsing -TimeoutSec 2).StatusCode -eq 200){exit 0}}catch{};exit 1" >nul 2>&1
-if errorlevel 1 ( timeout /t 2 /nobreak >nul & goto WAIT_SEARXNG )
-echo   OK: SearXNG online em http://localhost:8080
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "try{if((Invoke-WebRequest 'http://127.0.0.1:8888/' -UseBasicParsing -TimeoutSec 2).StatusCode -eq 200){exit 0}}catch{};exit 1" >nul 2>&1
+if not errorlevel 1 goto SEARXNG_OK
+timeout /t 2 /nobreak >nul
+goto WAIT_SEARXNG
+:SEARXNG_OK
+echo   OK: SearXNG online em http://localhost:8888
 
 :SEM_SEARXNG
 
