@@ -125,7 +125,7 @@ echo.
 echo [7/7] Executando verificacao de saude...
 %UV% run abstrator doctor 2>&1
 if errorlevel 1 (
-    echo   AVISO: Alguns checks falharam (ver acima).
+    echo   AVISO: Alguns checks falharam. Veja o log acima.
 ) else (
     echo   OK: Todos os checks passaram.
 )

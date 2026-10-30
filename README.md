@@ -282,7 +282,7 @@ uv run pytest tests/test_orchestrator.py
 ## Architecture
 
 ```
-CLI (typer)  /  MCP (FastMCP)
+CLI (typer)  /  MCP (MCPServer)
         └── Orchestrator
                 ├── assess_complexity  (LLM)
                 ├── decompose          (LLM → SubConcept[])
