@@ -33,12 +33,96 @@ ACTIVE: dict[str, Orchestrator] = {}
 mcp = MCPServer(
     "abstrator",
     instructions=(
-        "Pesquisa por abstracao recursiva. Fluxo recomendado: assess_complexity "
-        "(barato) para decidir se vale abstract -> abstract para a run completa "
-        "(JSON com arvore de nos, fontes citadas e learning_path) -> expand_node "
-        "para aprofundar nos que pararam em max_depth ou budget."
+        "Pesquisa por abstracao recursiva. Use 'ask' para obter uma resposta direta "
+        "formatada em markdown — ideal para conversa. Use 'abstract' quando precisar "
+        "do JSON estruturado completo com arvore, fontes e learning_path."
     ),
 )
+
+
+def _format_response(run: Run) -> str:
+    """Formata a Run como markdown limpo para uso direto em conversa."""
+    lines: list[str] = []
+
+    if run.summary:
+        lines.append(run.summary)
+        lines.append("")
+
+    # Recomendações do nó raiz ou da run
+    if run.recommendations:
+        lines.append("## Recomendações")
+        lines.append("")
+        for rec in run.recommendations:
+            lines.append(f"- {rec.text}")
+            if rec.rationale:
+                lines.append(f"  _{rec.rationale}_")
+        lines.append("")
+
+    # Questões em aberto do nó raiz
+    root = run.nodes.get(run.root_id)
+    if root and root.analysis.open_questions:
+        lines.append("## Questões em aberto")
+        lines.append("")
+        for q in root.analysis.open_questions:
+            lines.append(f"- {q}")
+        lines.append("")
+
+    # Rodapé leve: custo e fontes únicas
+    n_sources = len(run.sources)
+    footer_parts = []
+    if n_sources:
+        footer_parts.append(f"{n_sources} fonte{'s' if n_sources != 1 else ''} consultada{'s' if n_sources != 1 else ''}")
+    if run.budget.seconds:
+        footer_parts.append(f"{run.budget.seconds:.0f}s")
+    if run.budget.usd:
+        footer_parts.append(f"${run.budget.usd:.4f}")
+    if run.budget.stopped_by:
+        footer_parts.append(f"parou por {run.budget.stopped_by}")
+    if footer_parts:
+        lines.append(f"---\n*{' · '.join(footer_parts)}*")
+
+    return "\n".join(lines).strip()
+
+
+@mcp.tool()
+async def ask(
+    ctx: Context,
+    query: str,
+    mode: str = "quick",
+    goal: str = "",
+) -> str:
+    """Pesquisa um tema e devolve uma resposta direta em markdown, pronta para usar na conversa.
+
+    Use para perguntas como 'como desenhar um rosto', 'o que é event sourcing', etc.
+    mode: quick (padrao, rapido) | standard | deep.
+    goal: contexto adicional opcional, ex.: 'para iniciante' ou 'foco em performance'.
+    """
+    settings = get_settings()
+    audit = AuditLog(Path(settings.runs_dir), None, enabled=False)
+    cache = Cache(settings.db_path, enabled=True)
+
+    async def emit(event: dict[str, Any]) -> None:
+        if event.get("event") == "start":
+            ACTIVE[event["run_id"]] = orchestrator
+        try:
+            await ctx.report_progress(float(event.get("depth", 0)), event)
+        except Exception:
+            pass
+
+    orchestrator = Orchestrator(
+        settings, build_provider(settings), cache=cache, audit=audit, on_event=emit
+    )
+    run_id = ""
+    try:
+        run = await orchestrator.run(query, mode=mode, goal_context=goal)
+        run_id = run.run_id
+    finally:
+        ACTIVE.pop(run_id, None)
+        await orchestrator.aclose()
+        cache.close()
+
+    save_run(settings, run)
+    return _format_response(run)
 
 
 def _lenses(names: list[str] | None) -> tuple[Lens, ...] | None:
