@@ -94,11 +94,25 @@ echo   OK: data\, runs\, docs\ prontos.
 echo.
 echo [6/7] Verificando Docker e SearXNG...
 docker info >nul 2>&1
-if errorlevel 1 (
-    echo   AVISO: Docker nao esta rodando. Inicie o Docker Desktop e execute novamente.
-    echo   Continuando sem SearXNG...
-    goto SEM_SEARXNG
+if not errorlevel 1 goto DOCKER_PRONTO
+
+echo   Docker nao esta rodando. Iniciando Docker Desktop...
+start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+
+set /a DTRY=0
+:WAIT_DOCKER
+set /a DTRY+=1
+if !DTRY! gtr 30 (
+    echo   ERRO: Docker Desktop nao iniciou em 60s.
+    echo   Abra o Docker Desktop manualmente e execute preparar.bat novamente.
+    pause & exit /b 1
 )
+timeout /t 2 /nobreak >nul
+docker info >nul 2>&1
+if errorlevel 1 goto WAIT_DOCKER
+echo   OK: Docker Desktop pronto.
+
+:DOCKER_PRONTO
 
 docker compose up -d >nul 2>&1
 if errorlevel 1 docker-compose up -d >nul 2>&1
