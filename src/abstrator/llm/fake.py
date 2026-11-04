@@ -134,7 +134,6 @@ def synthesize(
                 {"concept": c, "kind": SubKind.PART.value, "rationale": "parte mais simples"}
                 for c in concepts
             ],
-            "reasoning": "dividir para conquistar",
         }
     if schema is LensFinding:
         sids = _source_ids(prompt)

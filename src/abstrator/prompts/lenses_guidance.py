@@ -20,17 +20,21 @@ LENS_GUIDANCE: dict[Lens, str] = {
         "custos (tempo, dinheiro, complexidade) de cada opcao."
     ),
     Lens.BEST_PRACTICES: (
-        "Liste regras que practitioners seguem de forma consistente, com o porquao de "
-        "cada uma e o erro tipico que ela evita."
+        "Liste as regras que practitioners experientes seguem de forma consistente. "
+        "Para cada regra: (1) o que fazer concretamente, (2) por que isso importa — "
+        "qual problema especifico evita, (3) o erro tipico de quem nao segue essa regra. "
+        "Evite generalizacoes como 'e importante testar' — seja especifico: o que testar, quando, como."
     ),
     Lens.EXPERT_VIEWS: (
-        "Registre o que/researchers, autores e especialistas reconhecidos dizem, "
-        "atribuindo cada claim a quem e a qual fonte. Separe consenso de posicao "
-        "minoritaria."
+        "Registre posicoes de pesquisadores, autores e profissionais reconhecidos na area, "
+        "atribuindo cada claim a nome e fonte especifica. Priorize: visoes contra-intuitivas, "
+        "consensos que surpreendem iniciantes, e divergencias reais entre especialistas. "
+        "Separe o que e consenso do que e posicao minoritaria ou controversa."
     ),
     Lens.ADVANCED_METHODS: (
-        "Liste abordagens mais sofisticadas que a media busca, com o momento certo de "
-        "usar cada uma e o custo/fit para o objetivo do usuario."
+        "Liste abordagens que profissionais seniorespuseram em pratica — nao as mais famosas, "
+        "mas as que realmente funcionam em producao. Para cada uma: quando usar (criterio concreto), "
+        "quando NAO usar, e o custo real de adotar. Inclua metodos que iniciantes tipicamente ignoram."
     ),
     Lens.EXISTING_TOOLS: (
         "Liste ferramentas, libs, servicos e projetos existentes, marcando quais sao "

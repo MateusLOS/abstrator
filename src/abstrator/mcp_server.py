@@ -180,7 +180,10 @@ async def ask(
         await orchestrator.aclose()
         cache.close()
 
-    save_run(settings, run)
+    try:
+        save_run(settings, run)
+    except Exception:
+        pass
     return _format_response(run)
 
 

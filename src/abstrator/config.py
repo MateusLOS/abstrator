@@ -12,7 +12,7 @@ from .models import ALL_LENSES, INTEGRATION_LENSES, Lens, RunMode
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-QuickLenses = (Lens.MEANING, Lens.PRACTICE, Lens.EXISTING_TOOLS)
+QuickLenses = (Lens.MEANING, Lens.PRACTICE, Lens.BEST_PRACTICES, Lens.EXPERT_VIEWS, Lens.EXISTING_TOOLS)
 StandardLenses = INTEGRATION_LENSES
 
 
@@ -96,7 +96,7 @@ DEFAULT_PRICING = (1.0, 3.0)
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(PROJECT_ROOT / ".env"),
         env_file_encoding="utf-8",
         env_prefix="ABSTRATOR_",
         extra="ignore",

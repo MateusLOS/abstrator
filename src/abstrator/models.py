@@ -303,7 +303,6 @@ class SubConcept(BaseModel):
 
 class Decomposition(BaseModel):
     subs: list[SubConcept] = Field(default_factory=list)
-    reasoning: str = ""
 
 
 class CreditedClaimDraft(BaseModel):
