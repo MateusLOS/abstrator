@@ -44,14 +44,14 @@ O comando pesquisa o tema e entrega um guia de nível profissional com:
 REM 1. Preparar ambiente (Python, uv, deps, Docker, SearXNG)
 preparar.bat
 
-REM 2. Preencher credenciais
-notepad .env
+REM 2. Configurar o provider LLM (wizard interativo)
+abstrator setup
 
 REM 3. Registrar o MCP no Claude Code (uma vez só)
-.venv\Scripts\abstrator.exe mcp
-REM ou via Claude Code:
-REM claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
+claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
 ```
+
+> **Sem chave de API?** Use `claude_code_cli` (requer Claude Code instalado) ou `ollama` (100% local). Ambos funcionam sem nenhuma chave.
 
 ---
 
@@ -77,39 +77,37 @@ uv run abstrator doctor
 
 ## Variáveis de ambiente (`.env`)
 
+Execute `abstrator setup` para configurar interativamente, ou edite manualmente:
+
 ```env
-# Provider: opencode_zen | anthropic | ollama | openrouter | gemini_cli | fake
-ABSTRATOR_LLM_PROVIDER=auto   # auto detecta pela chave disponível
+# Provider (execute 'abstrator setup' para configurar interativamente)
+ABSTRATOR_LLM_PROVIDER=claude_code_cli   # sem chave — usa OAuth do Claude Code
+ABSTRATOR_LLM_MODEL=claude-haiku-4-5-20251001
 
-# OpenCode
-OPENCODE_API_KEY=sk-...
-ABSTRATOR_LLM_MODEL=claude-sonnet-5
+# Anthropic direto (prompt caching nativo — até 90% de economia)
+# ABSTRATOR_LLM_PROVIDER=anthropic
+# ANTHROPIC_API_KEY=sk-ant-...
 
-# Anthropic direto (prompt caching nativo)
-ANTHROPIC_API_KEY=sk-ant-...
+# OpenRouter (50 req/dia grátis, centenas de modelos)
+# ABSTRATOR_LLM_PROVIDER=openrouter
+# OPENROUTER_API_KEY=sk-or-...
+# ABSTRATOR_LLM_MODEL=google/gemma-3-27b-it:free
 
 # Ollama (local, custo zero)
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=qwen2.5:14b
+# ABSTRATOR_LLM_PROVIDER=ollama
+# ABSTRATOR_LLM_MODEL=qwen2.5:14b
 
-# OpenRouter
-OPENROUTER_API_KEY=sk-or-...
-
-# SearXNG local (porta 8888 — 8080 pode estar ocupada pelo Steam ou outros apps)
+# SearXNG local (porta 8888)
 SEARXNG_URL=http://localhost:8888
-
-# Orçamento padrão (modo standard)
-ABSTRATOR_BUDGET_MAX_QUERIES=60
-ABSTRATOR_BUDGET_MAX_LLM_CALLS=80
-ABSTRATOR_BUDGET_MAX_USD=2.0
 ```
 
-### Resolução automática de provider (`auto`)
+Trocar provider a qualquer momento:
 
-1. `opencode_zen` — se `OPENCODE_API_KEY` estiver preenchida
-2. `anthropic` — se `ANTHROPIC_API_KEY` estiver preenchida
-3. `openrouter` — se `OPENROUTER_API_KEY` estiver preenchida
-4. `gemini_cli` — fallback (sem chave, usa binário `gemini`)
+```bash
+abstrator config provider claude_code_cli
+abstrator config provider anthropic
+abstrator config provider ollama
+```
 
 ---
 
@@ -127,6 +125,9 @@ abstrator eval <run_id>                   Avalia qualidade offline
 abstrator mcp                             Inicia servidor MCP (stdio)
 abstrator doctor                          Verifica saúde do ambiente
 abstrator schema                          Exporta JSON Schema da saída
+abstrator setup                           Wizard interativo de configuração
+abstrator config provider <nome>          Troca de provider sem wizard
+abstrator config show                     Mostra provider atual
 ```
 
 ---
@@ -238,16 +239,30 @@ claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mc
 
 ## Providers LLM
 
-### `opencode_zen` (padrão)
-Gateway OpenAI-compatible do OpenCode. Requer `OPENCODE_API_KEY`.
+| Provider | Chave necessária | Notas |
+|---|---|---|
+| `claude_code_cli` | nenhuma | **Recomendado.** Usa OAuth do Claude Code (assinatura Pro) |
+| `anthropic` | `ANTHROPIC_API_KEY` | API direta com cache de prompt — até 90% de economia |
+| `openrouter` | `OPENROUTER_API_KEY` | Centenas de modelos, uma só chave — 50 req/dia grátis |
+| `gemini_cli` | nenhuma | Delega ao binário `gemini` (requer Gemini CLI instalado) |
+| `opencode_zen` | `OPENCODE_API_KEY` | Gateway OpenAI-compatible |
+| `ollama` | nenhuma | Modelos locais, zero custo por token |
+| `fake` | nenhuma | Determinístico, sem rede — só para testes |
 
-### `anthropic`
-API direta da Anthropic com **cache de prompt nativo** — reduz custo em até 90% em runs longas. Requer `uv add anthropic` + `ANTHROPIC_API_KEY`.
+### `claude_code_cli` (recomendado — sem chave de API)
+
+Usa a assinatura Claude Pro via OAuth. Requer [Claude Code](https://claude.ai/code) instalado.
 
 ```bash
-uv add anthropic
+abstrator config provider claude_code_cli
+```
+
+### `anthropic`
+API direta com **cache de prompt nativo** — reduz custo em até 90% em runs longas.
+
+```bash
 # .env: ANTHROPIC_API_KEY=sk-ant-...
-# .env: ABSTRATOR_LLM_PROVIDER=anthropic
+abstrator config provider anthropic
 ```
 
 ### `ollama`

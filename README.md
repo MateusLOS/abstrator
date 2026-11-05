@@ -44,12 +44,14 @@ The command researches the topic and delivers a professional-grade guide with:
 REM 1. Prepare environment (Python, uv, deps, Docker, SearXNG)
 preparar.bat
 
-REM 2. Fill in credentials
-notepad .env
+REM 2. Configure the LLM provider (interactive wizard)
+abstrator setup
 
 REM 3. Register the MCP in Claude Code (once)
 claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
 ```
+
+> **No API key?** Use `claude_code_cli` (requires Claude Code installed) or `ollama` (fully local). Both work without any key.
 
 ---
 
@@ -75,34 +77,37 @@ uv run abstrator doctor
 
 ## Environment variables (`.env`)
 
+Run `abstrator setup` to configure interactively, or set manually:
+
 ```env
-# Provider: opencode_zen | anthropic | ollama | openrouter | gemini_cli | fake
-ABSTRATOR_LLM_PROVIDER=auto   # auto-detects from available keys
+# Provider (run 'abstrator setup' to configure interactively)
+ABSTRATOR_LLM_PROVIDER=claude_code_cli   # no API key needed — uses Claude Code OAuth
+ABSTRATOR_LLM_MODEL=claude-haiku-4-5-20251001
 
-# OpenCode
-OPENCODE_API_KEY=sk-...
-ABSTRATOR_LLM_MODEL=claude-sonnet-5
+# Anthropic API (direct — prompt caching enabled)
+# ABSTRATOR_LLM_PROVIDER=anthropic
+# ANTHROPIC_API_KEY=sk-ant-...
 
-# Anthropic (direct — prompt caching enabled)
-ANTHROPIC_API_KEY=sk-ant-...
+# OpenRouter (50 req/day free, hundreds of models)
+# ABSTRATOR_LLM_PROVIDER=openrouter
+# OPENROUTER_API_KEY=sk-or-...
+# ABSTRATOR_LLM_MODEL=google/gemma-3-27b-it:free
 
 # Ollama (local, zero cost)
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=qwen2.5:14b
-
-# OpenRouter (hundreds of models, one key)
-OPENROUTER_API_KEY=sk-or-...
+# ABSTRATOR_LLM_PROVIDER=ollama
+# ABSTRATOR_LLM_MODEL=qwen2.5:14b
 
 # SearXNG (port 8888 — port 8080 may be taken by Steam or other apps)
 SEARXNG_URL=http://localhost:8888
 ```
 
-### Auto-resolution order (`auto`)
+Switch provider at any time without the wizard:
 
-1. `opencode_zen` — if `OPENCODE_API_KEY` is set
-2. `anthropic` — if `ANTHROPIC_API_KEY` is set
-3. `openrouter` — if `OPENROUTER_API_KEY` is set
-4. `gemini_cli` — fallback (no key needed, uses `gemini` binary)
+```bash
+abstrator config provider claude_code_cli
+abstrator config provider anthropic
+abstrator config provider ollama
+```
 
 ---
 
@@ -219,12 +224,20 @@ Create `opencode.json` in your project folder:
 
 | Provider | Key needed | Notes |
 |---|---|---|
-| `opencode_zen` | `OPENCODE_API_KEY` | Default. OpenAI-compatible gateway |
-| `anthropic` | `ANTHROPIC_API_KEY` + `uv add anthropic` | Native prompt caching — up to 90% cost reduction on long runs |
+| `claude_code_cli` | none | **Recommended.** Uses Claude Code OAuth (Pro subscription) — no extra API key |
+| `anthropic` | `ANTHROPIC_API_KEY` | Direct API with native prompt caching — up to 90% cost reduction on long runs |
+| `openrouter` | `OPENROUTER_API_KEY` | Hundreds of models, one key — 50 req/day free tier |
+| `gemini_cli` | none | Delegates to `gemini` binary (requires Gemini CLI installed) |
+| `opencode_zen` | `OPENCODE_API_KEY` | OpenAI-compatible gateway |
 | `ollama` | none | Local models, zero token cost |
-| `openrouter` | `OPENROUTER_API_KEY` | Hundreds of models, one key |
-| `gemini_cli` | none | Delegates to `gemini` binary |
 | `fake` | none | Deterministic, no network — tests only |
+
+Configure with:
+```bash
+abstrator setup                           # interactive wizard
+abstrator config provider <name>          # quick switch
+abstrator config show                     # current status
+```
 
 ---
 
@@ -259,6 +272,9 @@ abstrator eval <run_id>                    Offline quality evaluation
 abstrator mcp                              Start MCP server (stdio)
 abstrator doctor                           Health check
 abstrator schema                           Export JSON Schema
+abstrator setup                            Interactive provider wizard
+abstrator config provider <name>           Quick provider switch
+abstrator config show                      Show current provider status
 ```
 
 ---
