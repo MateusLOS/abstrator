@@ -66,21 +66,23 @@ class AnthropicProvider(StructuredMixin):
         full_system = f"{system}\n\n{schema_hint}" if system else schema_hint
 
         try:
-            response = await self._client.messages.create(
-                model=self.model_name,
-                max_tokens=self._settings.llm_max_output_tokens,
-                temperature=(
-                    self._settings.llm_temperature if temperature is None else temperature
-                ),
-                system=[
-                    {
-                        "type": "text",
-                        "text": full_system,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[{"role": "user", "content": prompt}],
-            )
+            create_kwargs: dict = {
+                "model": self.model_name,
+                "max_tokens": self._settings.llm_max_output_tokens,
+                "system": full_system,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            # temperature não está disponível em todos os SDK builds
+            try:
+                import inspect
+                sig = inspect.signature(self._client.messages.create)
+                if "temperature" in sig.parameters:
+                    create_kwargs["temperature"] = (
+                        self._settings.llm_temperature if temperature is None else temperature
+                    )
+            except Exception:
+                pass
+            response = await self._client.messages.create(**create_kwargs)
         except self._sdk.RateLimitError as exc:
             raise LLMError("rate limit (429) na API Anthropic") from exc
         except self._sdk.APIStatusError as exc:

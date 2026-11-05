@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .audit import AuditLog
-from .config import get_settings
+from .config import get_settings, reset_settings_cache
 from .doctor import doctor as run_doctor
 from .doctor import format_checks
 from .engine.expand import expand_node
@@ -306,6 +306,67 @@ def schema(out: Path | None = typer.Option(None, "--out")) -> None:
     """Exporta o JSON Schema da saida (schema/abstraction.schema.json)."""
     path = export_schema(out)
     console.print(f"[green]schema em[/] {path}")
+
+
+@app.command()
+def setup(
+    provider: str | None = typer.Argument(None, help="Provider a configurar (opcional)"),
+    skip_test: bool = typer.Option(False, "--skip-test", help="Pula teste de conexão"),
+) -> None:
+    """Wizard interativo para configurar o provider LLM."""
+    from .setup import run_setup
+    run_setup(provider_name=provider, skip_test=skip_test)
+
+
+config_app = typer.Typer(help="Gerencia configurações do abstrator.")
+app.add_typer(config_app, name="config")
+
+
+@config_app.command("provider")
+def config_provider(
+    name: str = typer.Argument(..., help="Nome do provider"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Modelo a usar"),
+) -> None:
+    """Alterna o provider LLM sem passar pelo wizard completo.
+
+    Providers: claude_code_cli, anthropic, openrouter, gemini_cli, opencode_zen, ollama
+    """
+    from .setup import PROVIDERS, DEFAULT_MODELS, _write_env, _read_env
+    if name not in PROVIDERS:
+        valid = ", ".join(PROVIDERS.keys())
+        console.print(f"[red]Provider inválido.[/] Use um de: {valid}")
+        raise typer.Exit(1)
+
+    updates: dict[str, str] = {"ABSTRATOR_LLM_PROVIDER": name}
+    if model:
+        updates["ABSTRATOR_LLM_MODEL"] = model
+    elif name in DEFAULT_MODELS and DEFAULT_MODELS[name]:
+        updates["ABSTRATOR_LLM_MODEL"] = DEFAULT_MODELS[name]
+
+    _write_env(updates)
+    reset_settings_cache()
+
+    info = PROVIDERS[name]
+    console.print(f"[green]✓[/] Provider alterado para [bold]{info['label']}[/]")
+    if updates.get("ABSTRATOR_LLM_MODEL"):
+        console.print(f"  Modelo: {updates['ABSTRATOR_LLM_MODEL']}")
+    if info["keys"]:
+        missing = [k for k in info["keys"] if not _read_env().get(k)]
+        if missing:
+            console.print(f"[yellow]⚠ Chaves ausentes: {', '.join(missing)}[/]")
+            console.print(f"  {info['check_msg']}")
+            console.print(f"  Configure com: abstrator setup {name}")
+
+
+@config_app.command("show")
+def config_show() -> None:
+    """Mostra a configuração atual do provider."""
+    from .setup import PROVIDERS, show_provider_table
+    settings = get_settings()
+    console.print(f"Provider atual: [bold cyan]{settings.llm_provider}[/]")
+    console.print(f"Modelo: [dim]{settings.llm_model}[/]")
+    console.print()
+    show_provider_table(settings.llm_provider)
 
 
 def main() -> None:  # pragma: no cover

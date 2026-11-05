@@ -2,9 +2,13 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+!.env.example
 runs/
 data/
 *.sqlite3
 .pytest_cache/
 .ruff_cache/
 dist/
+.claude/settings.json
+.claude/settings.local.json

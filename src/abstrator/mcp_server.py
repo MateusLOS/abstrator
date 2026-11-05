@@ -142,6 +142,54 @@ def _format_response(run: Run) -> str:
     return "\n".join(lines).strip()
 
 
+def _check_provider_configured() -> str | None:
+    """Retorna mensagem de setup se provider não está configurado, None se ok."""
+    try:
+        settings = get_settings()
+        provider = settings.llm_provider
+        if provider == "opencode_zen" and not settings.opencode_api_key:
+            # padrão do .env.example mas sem chave — provável primeira execução
+            from pathlib import Path as _Path
+            env_path = _Path(__file__).parent.parent.parent / ".env"
+            if not env_path.exists():
+                return _SETUP_MSG
+        return None
+    except Exception:
+        return _SETUP_MSG
+
+
+_SETUP_MSG = """
+# Abstrator — Configuração necessária
+
+O provider LLM ainda não foi configurado. Execute o wizard de setup:
+
+```bash
+abstrator setup
+```
+
+Ou configure diretamente o provider desejado:
+
+```bash
+# Claude Code (OAuth/Pro — sem chave de API, requer Claude Code instalado)
+abstrator config provider claude_code_cli
+
+# Anthropic API
+abstrator config provider anthropic  # depois edite .env com ANTHROPIC_API_KEY
+
+# OpenRouter (50 req/dia gratuito)
+abstrator config provider openrouter  # depois edite .env com OPENROUTER_API_KEY
+
+# Ollama (100% local, sem custo)
+abstrator config provider ollama
+
+# Google Gemini CLI (gratuito, requer gemini CLI instalado)
+abstrator config provider gemini_cli
+```
+
+Providers disponíveis: `claude_code_cli`, `anthropic`, `openrouter`, `gemini_cli`, `opencode_zen`, `ollama`
+""".strip()
+
+
 @mcp.tool()
 async def ask(
     ctx: Context,
@@ -156,6 +204,9 @@ async def ask(
     mode: quick (rapido, menos profundidade) | standard (padrao) | deep (exaustivo).
     goal: contexto opcional, ex.: 'para iniciante', 'foco em performance', 'contexto B2B'.
     """
+    setup_msg = _check_provider_configured()
+    if setup_msg:
+        return setup_msg
     settings = get_settings()
     audit = AuditLog(Path(settings.runs_dir), None, enabled=False)
     cache = Cache(settings.db_path, enabled=True)

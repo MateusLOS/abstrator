@@ -39,4 +39,8 @@ def build_provider(settings: Settings) -> LLMProvider:
         from .openrouter import OpenRouterProvider
 
         return OpenRouterProvider(settings)
+    if provider == "claude_code_cli":
+        from .claude_code_cli import ClaudeCodeCLIProvider
+
+        return ClaudeCodeCLIProvider(settings)
     raise LLMError(f"provider desconhecido: {provider}")

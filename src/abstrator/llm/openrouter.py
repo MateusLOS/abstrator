@@ -96,7 +96,8 @@ class OpenRouterProvider(StructuredMixin):
         choices = data.get("choices") or []
         if not choices:
             raise LLMError(f"OpenRouter: resposta sem choices: {str(data)[:400]}")
-        content = (choices[0].get("message") or {}).get("content") or ""
+        msg = choices[0].get("message") or {}
+        content = msg.get("content") or ""
         if not content:
             raise LLMError(f"OpenRouter: resposta sem conteudo: {str(choices[0])[:400]}")
         return str(content)

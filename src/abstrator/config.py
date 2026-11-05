@@ -120,7 +120,7 @@ class Settings(BaseSettings):
 
     # --- llm ---
     llm_provider: Literal[
-        "auto", "opencode_zen", "gemini_cli", "fake", "anthropic", "ollama", "openrouter"
+        "auto", "opencode_zen", "gemini_cli", "fake", "anthropic", "ollama", "openrouter", "claude_code_cli"
     ] = "opencode_zen"
     llm_model: str = "claude-sonnet-5"
     llm_timeout: float = 120.0
