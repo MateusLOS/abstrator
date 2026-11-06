@@ -118,8 +118,9 @@ async def _check_llm(settings: Settings) -> Check:
         provider = build_provider(settings)
         result = await provider.complete_structured(
             'Classifique a complexidade de "como funciona HTTP" e responda APENAS o JSON '
-            'no formato: {"score": <float 0-1>, "verdict": "trivial|simple|moderate|complex", '
-            '"reason": "<uma frase>"}',
+            'no formato: {"score": <float 0-1>, "verdict": "simple", '
+            '"reason": "<uma frase>"}. '
+            'O campo verdict deve ser exatamente "simple" ou "complex".',
             ComplexityAssessment,
             stage="doctor",
         )

@@ -13,7 +13,7 @@ from rich.table import Table
 
 from .config import PROJECT_ROOT, reset_settings_cache
 
-console = Console()
+console = Console(legacy_windows=False)
 
 ENV_FILE = PROJECT_ROOT / ".env"
 
@@ -84,7 +84,7 @@ def show_provider_table(current: str | None = None) -> None:
         if check is None:
             status = "[yellow]chave[/]"
         elif check():
-            status = "[green]✓[/]"
+            status = "[green]ok[/]"
         else:
             status = "[red]ausente[/]"
 
@@ -237,16 +237,16 @@ def run_setup(provider_name: str | None = None, skip_test: bool = False) -> None
 
     _write_env(updates)
     reset_settings_cache()
-    console.print(f"\n[green]✓[/] .env atualizado com provider [bold]{chosen_key}[/]")
+    console.print(f"\n[green]OK[/] .env atualizado com provider [bold]{chosen_key}[/]")
 
     # Teste de conexão
     if not skip_test and not info["keys"]:  # testa providers sem chave
         console.print("Testando conexão...", end=" ")
         ok = _test_provider(chosen_key, updates.get("ABSTRATOR_LLM_MODEL", ""))
         if ok:
-            console.print("[green]✓ ok[/]")
+            console.print("[green]ok[/]")
         else:
-            console.print(f"[yellow]⚠ não foi possível verificar[/]")
+            console.print(f"[yellow]nao foi possivel verificar[/]")
             console.print(f"[dim]{info['check_msg']}[/]")
 
     console.print("\n[bold green]Configuração concluída![/]")

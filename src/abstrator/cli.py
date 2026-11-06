@@ -23,7 +23,7 @@ from .search.cache import Cache
 from .store import list_runs, load_run, resolve_run_id, save_run
 
 app = typer.Typer(add_completion=False, help="Abstrator: pesquisa por abstracao recursiva.")
-console = Console()
+console = Console(legacy_windows=False)
 
 
 def _lenses(value: str | None) -> tuple[Lens, ...] | None:
@@ -347,13 +347,13 @@ def config_provider(
     reset_settings_cache()
 
     info = PROVIDERS[name]
-    console.print(f"[green]✓[/] Provider alterado para [bold]{info['label']}[/]")
+    console.print(f"[green]OK[/] Provider alterado para [bold]{info['label']}[/]")
     if updates.get("ABSTRATOR_LLM_MODEL"):
         console.print(f"  Modelo: {updates['ABSTRATOR_LLM_MODEL']}")
     if info["keys"]:
         missing = [k for k in info["keys"] if not _read_env().get(k)]
         if missing:
-            console.print(f"[yellow]⚠ Chaves ausentes: {', '.join(missing)}[/]")
+            console.print(f"[yellow]AVISO: Chaves ausentes: {', '.join(missing)}[/]")
             console.print(f"  {info['check_msg']}")
             console.print(f"  Configure com: abstrator setup {name}")
 
@@ -370,6 +370,11 @@ def config_show() -> None:
 
 
 def main() -> None:  # pragma: no cover
+    import sys
+    if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf8"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     app()
 
 
