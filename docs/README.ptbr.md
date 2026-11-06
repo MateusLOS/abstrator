@@ -1,5 +1,7 @@
 # Abstrator
 
+<!-- mcp-name: io.github.mateuslos/abstrator -->
+
 > Pesquisa por abstração recursiva — transforma qualquer tema complexo em um guia profissional direto, pesquisando na web por múltiplas lentes especializadas e sintetizando o resultado.
 
 ## O que é
@@ -40,37 +42,45 @@ O comando pesquisa o tema e entrega um guia de nível profissional com:
 
 ## Início rápido
 
-```bat
-REM 1. Preparar ambiente (Python, uv, deps, Docker, SearXNG)
-preparar.bat
+```bash
+# 1. Instalar
+pip install abstrator        # ou: uv tool install abstrator
 
-REM 2. Configurar o provider LLM (wizard interativo)
+# 2. Iniciar mecanismo de busca local (requer Docker)
+docker run -d -p 8888:8080 searxng/searxng
+
+# 3. Configurar o provider LLM (wizard interativo)
 abstrator setup
 
-REM 3. Registrar o MCP no Claude Code (uma vez só)
-claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
+# 4. Registrar o MCP no Claude Code
+claude mcp add abstrator -- abstrator mcp
 ```
 
-> **Sem chave de API?** Use `claude_code_cli` (requer Claude Code instalado) ou `ollama` (100% local). Ambos funcionam sem nenhuma chave.
+> **Sem chave de API?** Use `claude_code_cli` (requer Claude Code instalado) ou `ollama` (100% local) no wizard de configuração.
 
 ---
 
-## Instalação manual
+## Instalação
 
 ### Pré-requisitos
 
 | Ferramenta | Versão mínima | Para quê |
 |---|---|---|
-| Python | 3.12 | runtime |
-| [uv](https://docs.astral.sh/uv/) | qualquer | gerenciador de pacotes |
-| Docker Desktop | qualquer | SearXNG local |
-| Chave de API ou Ollama | — | LLM |
+| Python | 3.11+ | runtime |
+| Docker | qualquer | SearXNG local (busca web) |
+| LLM | — | qualquer: Claude Code, Anthropic API, OpenRouter, Gemini CLI, Ollama |
 
 ```bash
+# Via PyPI
+pip install abstrator
+
+# Ou a partir do código-fonte
+git clone https://github.com/MateusLOS/abstrator
+cd abstrator
 uv sync
-cp .env.example .env   # editar com suas chaves
-docker compose up -d
-uv run abstrator doctor
+docker compose up -d    # inicia SearXNG na porta 8888
+abstrator setup         # wizard interativo de provider
+abstrator doctor        # verifica se tudo funciona
 ```
 
 ---
@@ -111,30 +121,7 @@ abstrator config provider ollama
 
 ---
 
-## CLI
-
-```
-abstrator run <query>                     Executa pesquisa completa
-abstrator run <query> --mode quick|standard|deep
-abstrator run <query> --lenses meaning,practice,existing_tools
-abstrator expand <run_id> <node_id>       Aprofunda nó específico
-abstrator runs                            Lista execuções salvas
-abstrator get <run_id>                    Mostra JSON de uma run
-abstrator improve                         Meta-modo: abstrai o próprio projeto
-abstrator eval <run_id>                   Avalia qualidade offline
-abstrator mcp                             Inicia servidor MCP (stdio)
-abstrator doctor                          Verifica saúde do ambiente
-abstrator schema                          Exporta JSON Schema da saída
-abstrator setup                           Wizard interativo de configuração
-abstrator config provider <nome>          Troca de provider sem wizard
-abstrator config show                     Mostra provider atual
-```
-
----
-
-## Servidor MCP
-
-### Ferramentas disponíveis
+## Ferramentas MCP
 
 | Ferramenta | Saída | Quando usar |
 |---|---|---|
@@ -150,38 +137,52 @@ abstrator config show                     Mostra provider atual
 ### Registrar no Claude Code
 
 ```bash
-claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
+claude mcp add abstrator -- abstrator mcp
 ```
 
-> **Nota:** use o executável direto do `.venv` — `uv` pode não estar no PATH do Claude Code.
+Se `abstrator` não estiver no PATH (comum em installs com venv), use o caminho completo:
 
-### Configurar no Claude Desktop
+```bash
+# macOS / Linux
+claude mcp add abstrator -- ~/.local/bin/abstrator mcp
+
+# Windows (PowerShell)
+claude mcp add abstrator -- "$env:APPDATA\Python\Scripts\abstrator.exe" mcp
+```
+
+### Claude Desktop
+
+Adicione ao `claude_desktop_config.json` (`%APPDATA%\Claude\` no Windows, `~/Library/Application Support/Claude/` no macOS):
 
 ```json
 {
   "mcpServers": {
     "abstrator": {
-      "command": "C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe",
+      "command": "abstrator",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-### Configurar no Gemini CLI
+### Gemini CLI
+
+Adicione ao `~/.gemini/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "abstrator": {
-      "command": "C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe",
+      "command": "abstrator",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-### Configurar no OpenCode
+### OpenCode
+
+Crie `opencode.json` na pasta do projeto:
 
 ```json
 {
@@ -189,7 +190,7 @@ claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mc
   "mcp": {
     "abstrator": {
       "type": "local",
-      "command": ["C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe", "mcp"],
+      "command": ["abstrator", "mcp"],
       "enabled": true
     }
   }
@@ -241,74 +242,68 @@ claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mc
 
 | Provider | Chave necessária | Notas |
 |---|---|---|
-| `claude_code_cli` | nenhuma | **Recomendado.** Usa OAuth do Claude Code (assinatura Pro) |
-| `anthropic` | `ANTHROPIC_API_KEY` | API direta com cache de prompt — até 90% de economia |
+| `claude_code_cli` | nenhuma | **Recomendado.** Usa OAuth do Claude Code (assinatura Pro) — sem chave extra |
+| `anthropic` | `ANTHROPIC_API_KEY` | API direta com cache de prompt nativo — até 90% de economia em runs longas |
 | `openrouter` | `OPENROUTER_API_KEY` | Centenas de modelos, uma só chave — 50 req/dia grátis |
 | `gemini_cli` | nenhuma | Delega ao binário `gemini` (requer Gemini CLI instalado) |
 | `opencode_zen` | `OPENCODE_API_KEY` | Gateway OpenAI-compatible |
 | `ollama` | nenhuma | Modelos locais, zero custo por token |
 | `fake` | nenhuma | Determinístico, sem rede — só para testes |
 
-### `claude_code_cli` (recomendado — sem chave de API)
-
-Usa a assinatura Claude Pro via OAuth. Requer [Claude Code](https://claude.ai/code) instalado.
-
+Configure com:
 ```bash
-abstrator config provider claude_code_cli
+abstrator setup                           # wizard interativo
+abstrator config provider <nome>          # troca rápida
+abstrator config show                     # status atual
 ```
-
-### `anthropic`
-API direta com **cache de prompt nativo** — reduz custo em até 90% em runs longas.
-
-```bash
-# .env: ANTHROPIC_API_KEY=sk-ant-...
-abstrator config provider anthropic
-```
-
-### `ollama`
-Modelos locais. **Zero custo por token.**
-
-```bash
-ollama pull qwen2.5:14b
-# .env: ABSTRATOR_LLM_PROVIDER=ollama
-# .env: OLLAMA_MODEL=qwen2.5:14b
-```
-
-Modelos recomendados: `qwen2.5:14b` (equilibrado), `mistral-nemo` (contexto longo), `llama3.3` (raciocínio).
-
-### `openrouter`
-Acesso a centenas de modelos com uma única chave. Requer `OPENROUTER_API_KEY`.
-
-```bash
-# .env: ABSTRATOR_LLM_PROVIDER=openrouter
-# .env: OPENROUTER_API_KEY=sk-or-...
-# .env: ABSTRATOR_LLM_MODEL=deepseek/deepseek-r1
-```
-
-### `gemini_cli`
-Delega ao binário `gemini` instalado localmente. Sem chave de API.
-
-### `fake`
-Provider determinístico para testes — sem rede, sem custo.
 
 ---
 
-## Ideias de extensão MCP
+## Budget e limites
 
-### Base vetorial local
-Consultar ChromaDB ou Qdrant antes de buscar na web. Ferramenta MCP: `search_local_knowledge(query, top_k)`.
+Limites rígidos — quando qualquer um é atingido, a run para e retorna resultado parcial:
 
-### Export para Anki / Obsidian
-Transformar a `learning_path` em flashcards Anki (`.apkg`) ou notas Obsidian (`.md`). Ferramenta MCP: `generate_flashcards(run_id, format)`.
+| Variável | Padrão | O que limita |
+|---|---|---|
+| `ABSTRATOR_BUDGET_MAX_QUERIES` | 60 | buscas web |
+| `ABSTRATOR_BUDGET_MAX_PAGES` | 120 | páginas baixadas |
+| `ABSTRATOR_BUDGET_MAX_LLM_CALLS` | 80 | chamadas LLM |
+| `ABSTRATOR_BUDGET_MAX_TOKENS` | 400 000 | tokens totais |
+| `ABSTRATOR_BUDGET_MAX_SECONDS` | 900 | tempo total |
+| `ABSTRATOR_BUDGET_MAX_USD` | 2.0 | custo estimado em USD |
 
-### Comparação entre Runs
-Detectar contradições ou evoluções entre duas pesquisas. Ferramenta MCP: `compare_runs(run_id_a, run_id_b)`.
+Modos escalam o budget: `quick` = 0.35×, `standard` = 1×, `deep` = 2.5×.
 
-### Notificação por webhook
-Para runs longas, notificar ao concluir. Ferramenta MCP: `abstract_async(query, webhook_url)`.
+---
 
-### Export para Notion / Obsidian
-Publicar `report.md` diretamente em workspace. Ferramenta MCP: `export_run(run_id, destination)`.
+## CLI
+
+```
+abstrator run <query>                      Executa pesquisa completa
+abstrator run <query> --mode quick|standard|deep
+abstrator run <query> --lenses meaning,practice,existing_tools
+abstrator expand <run_id> <node_id>        Aprofunda nó específico
+abstrator runs                             Lista execuções salvas
+abstrator get <run_id>                     Mostra JSON de uma run
+abstrator improve                          Meta-modo: abstrai o próprio projeto
+abstrator eval <run_id>                    Avalia qualidade offline
+abstrator mcp                              Inicia servidor MCP (stdio)
+abstrator doctor                           Verifica saúde do ambiente
+abstrator schema                           Exporta JSON Schema da saída
+abstrator setup                            Wizard interativo de configuração
+abstrator config provider <nome>           Troca de provider sem wizard
+abstrator config show                      Mostra provider atual
+```
+
+---
+
+## Testes
+
+```bash
+uv run pytest              # todos os testes
+uv run pytest -x           # para no primeiro erro
+uv run pytest tests/test_orchestrator.py
+```
 
 ---
 
@@ -332,31 +327,6 @@ Cache : data/abstrator.sqlite3  (search, page, concept, llm — TTL configuráve
 
 ---
 
-## Testes
-
-```bash
-uv run pytest              # todos os testes
-uv run pytest -x           # para no primeiro erro
-uv run pytest tests/test_orchestrator.py
-```
-
----
-
-## Budget e custos
-
-| Variável | Padrão | O que limita |
-|---|---|---|
-| `ABSTRATOR_BUDGET_MAX_QUERIES` | 60 | buscas web |
-| `ABSTRATOR_BUDGET_MAX_PAGES` | 120 | páginas baixadas |
-| `ABSTRATOR_BUDGET_MAX_LLM_CALLS` | 80 | chamadas LLM |
-| `ABSTRATOR_BUDGET_MAX_TOKENS` | 400 000 | tokens totais |
-| `ABSTRATOR_BUDGET_MAX_SECONDS` | 900 | tempo total |
-| `ABSTRATOR_BUDGET_MAX_USD` | 2.0 | custo estimado em USD |
-
-Modos escalam o budget: `quick` = 0.35×, `standard` = 1×, `deep` = 2.5×.
-
----
-
 ## Contribuindo
 
 1. Fork + branch a partir de `main`
@@ -364,3 +334,9 @@ Modos escalam o budget: `quick` = 0.35×, `standard` = 1×, `deep` = 2.5×.
 3. Escreva testes antes de implementar (TDD London School)
 4. `uv run pytest` — todos os testes devem passar
 5. Abra PR com descrição do problema e solução
+
+---
+
+## Documentação
+
+- [README in English](../README.md)

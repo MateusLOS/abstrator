@@ -1,5 +1,7 @@
 # Abstrator
 
+<!-- mcp-name: io.github.mateuslos/abstrator -->
+
 > Recursive abstraction research — transforms any complex topic into a professional-grade guide by decomposing it, researching each part through specialized lenses, and synthesizing the result into clean, conversation-ready markdown.
 
 ## What it is
@@ -40,18 +42,21 @@ The command researches the topic and delivers a professional-grade guide with:
 
 ## Quick start
 
-```bat
-REM 1. Prepare environment (Python, uv, deps, Docker, SearXNG)
-preparar.bat
+```bash
+# 1. Install
+pip install abstrator        # or: uv tool install abstrator
 
-REM 2. Configure the LLM provider (interactive wizard)
+# 2. Start local search engine (requires Docker)
+docker run -d -p 8888:8080 searxng/searxng
+
+# 3. Configure the LLM provider (interactive wizard)
 abstrator setup
 
-REM 3. Register the MCP in Claude Code (once)
-claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
+# 4. Register the MCP in Claude Code
+claude mcp add abstrator -- abstrator mcp
 ```
 
-> **No API key?** Use `claude_code_cli` (requires Claude Code installed) or `ollama` (fully local). Both work without any key.
+> **No API key?** Choose `claude_code_cli` (requires Claude Code installed) or `ollama` (fully local) in the setup wizard.
 
 ---
 
@@ -61,16 +66,21 @@ claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mc
 
 | Tool | Min version | Purpose |
 |---|---|---|
-| Python | 3.12 | runtime |
-| [uv](https://docs.astral.sh/uv/) | any | package manager |
-| Docker Desktop | any | local SearXNG |
-| API key or Ollama | — | LLM |
+| Python | 3.11+ | runtime |
+| Docker | any | local SearXNG (web search) |
+| LLM | — | any of: Claude Code, Anthropic API, OpenRouter, Gemini CLI, Ollama |
 
 ```bash
+# From PyPI
+pip install abstrator
+
+# Or from source
+git clone https://github.com/MateusLOS/abstrator
+cd abstrator
 uv sync
-cp .env.example .env   # edit with your keys
-docker compose up -d
-uv run abstrator doctor
+docker compose up -d    # starts SearXNG on port 8888
+abstrator setup         # interactive provider wizard
+abstrator doctor        # verify everything works
 ```
 
 ---
@@ -127,20 +137,28 @@ abstrator config provider ollama
 ### Register in Claude Code
 
 ```bash
-claude mcp add abstrator -- C:\Projetos\abstrator\.venv\Scripts\abstrator.exe mcp
+claude mcp add abstrator -- abstrator mcp
 ```
 
-> **Note:** use the full path to the `.venv` executable — `uv` may not be in Claude Code's PATH.
+If `abstrator` is not in PATH (common with venv installs), use the full path:
+
+```bash
+# macOS / Linux
+claude mcp add abstrator -- ~/.local/bin/abstrator mcp
+
+# Windows (PowerShell)
+claude mcp add abstrator -- "$env:APPDATA\Python\Scripts\abstrator.exe" mcp
+```
 
 ### Claude Desktop
 
-Add to `%APPDATA%\Claude\claude_desktop_config.json`:
+Add to `claude_desktop_config.json` (`%APPDATA%\Claude\` on Windows, `~/Library/Application Support/Claude/` on macOS):
 
 ```json
 {
   "mcpServers": {
     "abstrator": {
-      "command": "C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe",
+      "command": "abstrator",
       "args": ["mcp"]
     }
   }
@@ -149,13 +167,13 @@ Add to `%APPDATA%\Claude\claude_desktop_config.json`:
 
 ### Gemini CLI
 
-Add to `%USERPROFILE%\.gemini\settings.json`:
+Add to `~/.gemini/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "abstrator": {
-      "command": "C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe",
+      "command": "abstrator",
       "args": ["mcp"]
     }
   }
@@ -172,7 +190,7 @@ Create `opencode.json` in your project folder:
   "mcp": {
     "abstrator": {
       "type": "local",
-      "command": ["C:\\Projetos\\abstrator\\.venv\\Scripts\\abstrator.exe", "mcp"],
+      "command": ["abstrator", "mcp"],
       "enabled": true
     }
   }
