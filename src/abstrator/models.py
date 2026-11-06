@@ -256,6 +256,18 @@ class Run(Strict):
         for child in self.nodes[node_id].children:
             self._assert_acyclic(child, seen)
 
+    def prune_dangling_refs(self) -> None:
+        """Remove referencias a nos inexistentes (ocorre quando budget para run em paralelo).
+
+        Corrige duas inconsistencias:
+        - node.children contendo ids nao presentes em self.nodes
+        - node.parent_id apontando para no nao presente em self.nodes
+        """
+        for node in self.nodes.values():
+            node.children = [c for c in node.children if c in self.nodes]
+            if node.parent_id is not None and node.parent_id not in self.nodes:
+                node.parent_id = None
+
     def ordered_nodes(self) -> list[Node]:
         """Nos na ordem da travessia (simples -> complexo)."""
         return [self.nodes[n] for n in self.learning_path if n in self.nodes]

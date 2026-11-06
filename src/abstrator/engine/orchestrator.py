@@ -228,6 +228,8 @@ class Orchestrator:
         run.budget = self.budget.snapshot()
         if self.cancel_event.is_set():
             run.warnings.append("execucao cancelada: arvore parcial")
+        # Garante consistência da árvore mesmo quando budget interrompe nós em paralelo
+        run.prune_dangling_refs()
         self._event({"event": "done", "run_id": run_id, "nodes": len(self.nodes)})
         self._audit(
             "run_finished",
