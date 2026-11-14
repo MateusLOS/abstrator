@@ -133,7 +133,9 @@ class Orchestrator:
     def _event(self, payload: dict[str, Any]) -> None:
         if self.on_event is not None:
             try:
-                self.on_event(payload)
+                result = self.on_event(payload)
+                if asyncio.iscoroutine(result):
+                    asyncio.ensure_future(result)
             except Exception:  # pragma: no cover
                 log.exception("falha no callback de progresso")
 

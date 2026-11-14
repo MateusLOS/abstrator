@@ -215,7 +215,7 @@ async def ask(
         if event.get("event") == "start":
             ACTIVE[event["run_id"]] = orchestrator
         try:
-            await ctx.report_progress(float(event.get("depth", 0)), event)
+            await ctx.report_progress(float(event.get("depth", 0)), None)
         except Exception:
             pass
 
@@ -306,7 +306,7 @@ async def abstract(  # noqa: A001 - nome da ferramenta e o nome do plano
             started["run_id"] = event.get("run_id", "")
             ACTIVE[event["run_id"]] = orchestrator
         try:
-            await ctx.report_progress(float(event.get("depth", 0)), event)
+            await ctx.report_progress(float(event.get("depth", 0)), None)
         except Exception:  # cliente sem suporte a progresso
             log.info("%s", event)
 

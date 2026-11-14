@@ -17,43 +17,26 @@ search:
   default_lang: "auto"
 
 outgoing:
-  request_timeout: 8.0
-  max_request_timeout: 10.0
-  pool_connections: 50
+  request_timeout: 20.0
+  max_request_timeout: 30.0
+  pool_connections: 100
 
 engines:
-  # --- Web geral ---
-  - name: bing
-    shortcut: b
+  - name: arxiv
+    shortcut: arx
     disabled: false
-  - name: duckduckgo
-    shortcut: ddg
+  - name: google scholar
+    shortcut: gos
     disabled: false
-
-  # --- Técnico / código ---
+  - name: semantic scholar
+    shortcut: ssc
+    disabled: false
+  - name: crossref
+    shortcut: cr
+    disabled: false
   - name: github
     shortcut: gh
     disabled: false
   - name: stackoverflow
     shortcut: stck
     disabled: false
-
-  # --- Desabilitados ---
-  - name: google
-    shortcut: g
-    disabled: true
-  - name: brave
-    shortcut: brave
-    disabled: true
-  - name: arxiv
-    shortcut: arx
-    disabled: true
-  - name: google scholar
-    shortcut: gos
-    disabled: true
-  - name: semantic scholar
-    shortcut: ssc
-    disabled: true
-  - name: crossref
-    shortcut: cr
-    disabled: true

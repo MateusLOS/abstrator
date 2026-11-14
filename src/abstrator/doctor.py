@@ -68,7 +68,7 @@ def _check_docker() -> Check:
 async def _check_searxng(settings: Settings) -> Check:
     url = settings.searxng_url.rstrip("/")
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=25.0) as client:
             resp = await client.get(f"{url}/search", params={"q": "test", "format": "json"})
         if resp.status_code != 200:
             return Check(
