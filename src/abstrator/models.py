@@ -257,29 +257,39 @@ class Run(Strict):
             self._assert_acyclic(child, seen)
 
     def prune_dangling_refs(self) -> None:
-        """Remove referencias a nos inexistentes (ocorre quando budget para run em paralelo).
+        """Remove referencias a nos inconsistentes (ocorre quando budget para run em paralelo).
 
-        Corrige tres inconsistencias:
-        - node.children contendo ids nao presentes em self.nodes
-        - node.parent_id apontando para no nao presente em self.nodes
-        - no com parent_id definido mas nao presente na lista de filhos do pai
-          (ocorre quando _abstract registra o no antes de falhar e _guarded cria
-          um no substituto com id diferente)
+        Itera ate estabilizar porque remocoes podem criar cascatas:
+        - no com parent_id apontando para no inexistente → parent_id = None
+        - filhos em node.children que nao existem em self.nodes → removidos
+        - no cujo pai existe mas nao o tem em children (orphao) → removido de self.nodes
+          (cria cascata: filhos do orphao ficam com parent_id invalido na proxima rodada)
         """
-        for node in self.nodes.values():
-            node.children = [c for c in node.children if c in self.nodes]
-            if node.parent_id is not None and node.parent_id not in self.nodes:
-                node.parent_id = None
+        for _ in range(len(self.nodes) + 1):  # limite de seguranca contra loop infinito
+            changed = False
 
-        # Segunda passagem: remove orphans (parent existe mas nao aponta de volta)
-        orphans = [
-            node_id
-            for node_id, node in self.nodes.items()
-            if node.parent_id is not None
-            and node_id not in self.nodes[node.parent_id].children
-        ]
-        for node_id in orphans:
-            del self.nodes[node_id]
+            for node in list(self.nodes.values()):
+                new_children = [c for c in node.children if c in self.nodes]
+                if len(new_children) != len(node.children):
+                    node.children = new_children
+                    changed = True
+                if node.parent_id is not None and node.parent_id not in self.nodes:
+                    node.parent_id = None
+                    changed = True
+
+            orphans = [
+                node_id
+                for node_id, node in self.nodes.items()
+                if node.parent_id is not None
+                and node_id not in self.nodes[node.parent_id].children
+            ]
+            if orphans:
+                for node_id in orphans:
+                    del self.nodes[node_id]
+                changed = True
+
+            if not changed:
+                break
 
     def ordered_nodes(self) -> list[Node]:
         """Nos na ordem da travessia (simples -> complexo)."""
