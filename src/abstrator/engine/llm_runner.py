@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, TypeVar
 
@@ -8,8 +9,9 @@ from pydantic import BaseModel
 from ..audit import AuditLog
 from ..config import Settings
 from ..llm.base import LLMProvider
+from ..models import StopReason
 from ..search.cache import Cache
-from .budget import BudgetTracker
+from .budget import BudgetExceeded, BudgetTracker
 
 log = logging.getLogger(__name__)
 
@@ -55,9 +57,25 @@ class LLMRunner:
                 self._audit("llm_cache_hit", stage=stage, schema=schema.__name__)
                 return schema.model_validate(cached)
 
-        result = await self.provider.complete_structured(
-            prompt, schema, system=system, temperature=temperature, stage=stage
+        # Limita tempo total da call (incluindo espera pelo lock) ao budget restante.
+        # Corrige starvation: coroutines que passaram do ensure() e ficam na fila do
+        # _hooks_lock continuariam rodando por horas mesmo após o budget expirar.
+        remaining = self.budget.max_seconds - self.budget.elapsed()
+        max_retries = self.settings.llm_max_retries + 1
+        per_call_cap = min(
+            max(remaining + 10.0, 30.0),
+            self.settings.llm_timeout * max_retries + 30.0,
         )
+        try:
+            result = await asyncio.wait_for(
+                self.provider.complete_structured(
+                    prompt, schema, system=system, temperature=temperature, stage=stage
+                ),
+                timeout=per_call_cap,
+            )
+        except asyncio.TimeoutError:
+            self.budget.stop(StopReason.BUDGET)
+            raise BudgetExceeded(StopReason.BUDGET)
         self.budget.spend_llm(result.usage)
         self.total_usd += result.usage.cost_usd
         self._audit(
@@ -83,6 +101,8 @@ class LLMRunner:
     def _event(self, payload: dict[str, Any]) -> None:
         if self.on_event is not None:
             try:
-                self.on_event(payload)
+                result = self.on_event(payload)
+                if asyncio.iscoroutine(result):
+                    asyncio.ensure_future(result)
             except Exception:  # pragma: no cover - callback do consumidor
                 log.exception("falha no callback de progresso")
