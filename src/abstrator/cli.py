@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import signal
+import sys
 from pathlib import Path
 
 import typer
@@ -136,7 +137,7 @@ def run(
         out.write_text(payload, encoding="utf-8")
         console.print(f"[green]salvo em[/] {out}")
     else:
-        print(payload)
+        sys.stdout.buffer.write(payload.encode("utf-8") + b"\n")
     console.print(
         f"[dim]run {result.run_id}: {len(result.nodes)} nos, {len(result.sources)} fontes, "
         f"{result.budget.llm_calls} chamadas LLM, {result.budget.seconds:.1f}s, "
