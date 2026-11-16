@@ -102,6 +102,7 @@ class ClaudeCodeCLIProvider(StructuredMixin):
         self.usage_log = []
         self._settings = settings
         self._usage = LLMUsage()
+        self._budget = None  # injetado pelo LLMRunner antes de cada chamada
 
     @property
     def _last_usage(self) -> LLMUsage:
@@ -196,6 +197,11 @@ class ClaudeCodeCLIProvider(StructuredMixin):
     async def _spawn_no_hooks(self, argv: list[str], timeout: float) -> tuple[str, str, int]:
         """Executa claude com hooks do ai-memory temporariamente desabilitados."""
         async with _hooks_lock:
+            # Segunda verificação do budget após adquirir o lock: coroutines que
+            # passaram pelo ensure() antes e ficaram na fila do lock abordam aqui
+            # em vez de executar o subprocess com budget já expirado.
+            if self._budget is not None:
+                self._budget.ensure()
             original = _read_hooks()
             if original is not None:
                 _write_hooks({})
