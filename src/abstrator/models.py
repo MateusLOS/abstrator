@@ -259,14 +259,27 @@ class Run(Strict):
     def prune_dangling_refs(self) -> None:
         """Remove referencias a nos inexistentes (ocorre quando budget para run em paralelo).
 
-        Corrige duas inconsistencias:
+        Corrige tres inconsistencias:
         - node.children contendo ids nao presentes em self.nodes
         - node.parent_id apontando para no nao presente em self.nodes
+        - no com parent_id definido mas nao presente na lista de filhos do pai
+          (ocorre quando _abstract registra o no antes de falhar e _guarded cria
+          um no substituto com id diferente)
         """
         for node in self.nodes.values():
             node.children = [c for c in node.children if c in self.nodes]
             if node.parent_id is not None and node.parent_id not in self.nodes:
                 node.parent_id = None
+
+        # Segunda passagem: remove orphans (parent existe mas nao aponta de volta)
+        orphans = [
+            node_id
+            for node_id, node in self.nodes.items()
+            if node.parent_id is not None
+            and node_id not in self.nodes[node.parent_id].children
+        ]
+        for node_id in orphans:
+            del self.nodes[node_id]
 
     def ordered_nodes(self) -> list[Node]:
         """Nos na ordem da travessia (simples -> complexo)."""
