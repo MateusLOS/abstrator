@@ -328,6 +328,17 @@ class Orchestrator:
             concept = kwargs.get("concept") or (args[0] if args else "desconhecido")
             depth = kwargs.get("depth", 0)
             parent_id = kwargs.get("parent_id")
+            # Recupera o no parcialmente criado pelo _abstract (registrado no memo)
+            # para preservar filhos e analise ja concluidos em vez de descartar tudo.
+            key = decompose_mod.normalize(str(concept))
+            partial_id = self.memo.get(key)
+            if partial_id and partial_id in self.nodes:
+                node = self.nodes[partial_id]
+                if node.status not in (NodeStatus.BUDGET_STOPPED, NodeStatus.FAILED):
+                    node.status = NodeStatus.BUDGET_STOPPED
+                    node.stop_reason = reason
+                    node.notes.append(f"parado por {reason.value}")
+                return node
             return self._stopped_node(str(concept), depth, parent_id, reason)
         except Exception as exc:
             log.exception("falha ao criar no")
